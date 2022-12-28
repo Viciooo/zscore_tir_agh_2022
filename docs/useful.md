@@ -1,4 +1,13 @@
-# Online variance
+# Useful
+
+## Notes
+
+* czytanie z pliku danych
+* ustalenie kiedy learning się kończy
+* liczenie odchylenia standardowe
+* on the fly liczysz
+
+## Online variance algorithm
 
 ```python
 def online_variance(data):

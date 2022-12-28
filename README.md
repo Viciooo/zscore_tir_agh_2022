@@ -1,6 +1,10 @@
-# zscore_tir_agh_2022
+# Zscore anomaly detection written in C
 
-- czytanie z pliku danych
-- ustalenie kiedy learning się kończy
-- liczenie odchylenia standardowe
-- on the fly liczysz 
+Project description here
+
+## Contributors
+
+* [Piotr Witek](https://github.com/Viciooo)
+* [Bartek Chwast](https://github.com/bchwast)
+* [Piotr Kowalczyk](https://github.com/pkowalczyk1)
+* [Mikołaj Wielgos](https://github.com/wlgs)
