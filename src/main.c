@@ -15,6 +15,10 @@ struct POINT {
 
 struct POINT train_data[TRAIN_DATA_SIZE];
 
+struct POINT online_mean = {0.0, 0.0, 0.0};
+struct POINT online_m2 = {0.0, 0.0, 0.0};
+int current_count = 0;
+
 int count_lines(FILE *file) {
     char buf[BUF_SIZE];
     int counter = 0;
@@ -68,6 +72,20 @@ int read_data() {
 }
 
 
+void update_variance(struct POINT new_point) {
+    current_count++;
+    struct POINT delta = {new_point.x - online_mean.x, new_point.y - online_mean.y, new_point.z - online_mean.z};
+    
+    online_mean.x += delta.x / current_count;
+    online_mean.y += delta.y / current_count;
+    online_mean.z += delta.z / current_count;
+    
+    online_m2.x += delta.x * (new_point.x - online_mean.x);
+    online_m2.y += delta.y * (new_point.y - online_mean.y);
+    online_m2.z += delta.z * (new_point.z - online_mean.z);
+}
+
+
 int main(void) {
     read_data();
 
@@ -94,13 +112,22 @@ int main(void) {
         standard_deviation.y += (train_data[i].y - mean.y) * (train_data[i].y - mean.y);
         standard_deviation.z += (train_data[i].z - mean.z) * (train_data[i].z - mean.z);
     }
-    standard_deviation.x = sqrtf(standard_deviation.x);
-    standard_deviation.y = sqrtf(standard_deviation.y);
-    standard_deviation.z = sqrtf(standard_deviation.z);
+    standard_deviation.x = sqrtf(standard_deviation.x / (TRAIN_DATA_SIZE - 1));
+    standard_deviation.y = sqrtf(standard_deviation.y / (TRAIN_DATA_SIZE - 1));
+    standard_deviation.z = sqrtf(standard_deviation.z / (TRAIN_DATA_SIZE - 1));
     printf("x: %f y: %f z: %f\n",
            standard_deviation.x,
            standard_deviation.y,
            standard_deviation.z);
+
+    for (int i = 0; i < TRAIN_DATA_SIZE; ++i) {
+        update_variance(train_data[i]);
+    }
+
+    printf("x: %f y: %f z: %f\n",
+           sqrtf(online_m2.x / (TRAIN_DATA_SIZE - 1)),
+           sqrtf(online_m2.y / (TRAIN_DATA_SIZE - 1)),
+           sqrtf(online_m2.z / (TRAIN_DATA_SIZE - 1)));
 
     return 0;
 }
