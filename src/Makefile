@@ -18,3 +18,7 @@ run: all
 $(TARGET): $(TARGET).c
 	@echo -e 'Compiling $(TARGET).c ...'
 	$(CC) $(CFLAGS) -o ./$(OUTPUT_DIR)/$(TARGET) $(TARGET).c
+
+crude: # nie wiem jak tam podlinkować matha (dodać -lm) i mam to w dupie więc dodałem takie coś
+	gcc main.c -o main -lm
+	./main
