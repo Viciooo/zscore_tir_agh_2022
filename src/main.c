@@ -24,27 +24,6 @@ struct POINT online_mean = {0.0, 0.0, 0.0};
 struct POINT online_m2 = {0.0, 0.0, 0.0};
 int current_count = 0;
 
-int count_lines(FILE *file) {
-    char buf[BUF_SIZE];
-    int counter = 0;
-    for (;;) {
-        size_t res = fread(buf, 1, BUF_SIZE, file);
-        if (ferror(file))
-            return -1;
-
-        int i;
-        for (i = 0; i < res; i++)
-            if (buf[i] == '\n')
-                counter++;
-
-        if (feof(file))
-            break;
-    }
-
-    return counter;
-}
-
-
 int read_data(const char* file_path, struct POINT* arr) {
     FILE *filePointer;
 

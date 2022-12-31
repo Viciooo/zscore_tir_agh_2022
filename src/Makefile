@@ -18,3 +18,7 @@ run: all
 $(TARGET): $(TARGET).c
 	@echo -e 'Compiling $(TARGET).c ...'
 	@$(CC) $(CFLAGS) -o ./$(OUTPUT_DIR)/$(TARGET) $(TARGET).c
+
+crude:
+	gcc main.c -o main -lm
+	./main
