@@ -83,11 +83,11 @@ void update_variance(struct POINT new_point) {
 */
 int is_anomaly(struct POINT new_point, unsigned m2_factor){
     int res = 0;
-    if (fabs(new_point.x - pow(online_m2.x / (TRAIN_DATA_SIZE - 1), 2) > m2_factor * pow(online_m2.x / (TRAIN_DATA_SIZE - 1), 2)))
+    if (fabs(new_point.x - pow(online_m2.x / (TRAIN_DATA_SIZE - 1), 2)) > m2_factor * pow(online_m2.x / (TRAIN_DATA_SIZE - 1), 2))
         res += 1;
-    if (fabs(new_point.y - pow(online_m2.y / (TRAIN_DATA_SIZE - 1), 2) > m2_factor * pow(online_m2.y / (TRAIN_DATA_SIZE - 1), 2)))
+    if (fabs(new_point.y - pow(online_m2.y / (TRAIN_DATA_SIZE - 1), 2)) > m2_factor * pow(online_m2.y / (TRAIN_DATA_SIZE - 1), 2))
         res += 2;
-    if (fabs(new_point.z - pow(online_m2.z / (TRAIN_DATA_SIZE - 1), 2) > m2_factor * pow(online_m2.z / (TRAIN_DATA_SIZE - 1), 2)))
+    if (fabs(new_point.z - pow(online_m2.z / (TRAIN_DATA_SIZE - 1), 2)) > m2_factor * pow(online_m2.z / (TRAIN_DATA_SIZE - 1), 2))
         res += 4;
     return res;
 }
@@ -130,16 +130,16 @@ int main(void) {
 #ifdef VERBOSE
     printf("sd -> ");
     printf("x: %f y: %f z: %f\n",
-           standard_deviation.x,
-           standard_deviation.y,
-           standard_deviation.z);
+        standard_deviation.x,
+        standard_deviation.y,
+        standard_deviation.z);
 #endif
 
 
     for (int i = 0; i < TRAIN_DATA_SIZE; ++i) {
 #ifdef VERBOSE
-        printf("m2 iter:%d -> ", i);
-        printf("x: %f y: %f z: %f\n",
+    printf("m2 iter:%d -> ", i);
+    printf("x: %f y: %f z: %f\n",
         sqrtf(online_m2.x / (TRAIN_DATA_SIZE - 1)),
         sqrtf(online_m2.y / (TRAIN_DATA_SIZE - 1)),
         sqrtf(online_m2.z / (TRAIN_DATA_SIZE - 1)));
@@ -153,7 +153,7 @@ int main(void) {
         sqrtf(online_m2.z / (TRAIN_DATA_SIZE - 1)));
 
     int anomalies_found = 0;
-    for (int i=0; i< TEST_DATA_SIZE; ++i){
+    for (int i = 0; i< TEST_DATA_SIZE; ++i){
 #ifdef VERBOSE
         printf("id%d anomaly check -> %d\n", i, is_anomaly(test_data[i], ANOMALY_DISTANCE_FACTOR));
 #endif
