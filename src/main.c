@@ -4,7 +4,7 @@
 #define TEST_DATA_SIZE 1000
 #define ANOMALY_DISTANCE_FACTOR 3
 
-// #define VERBOSE
+//#define VERBOSE
 
 #include <math.h>
 #include <stdio.h>
@@ -12,9 +12,9 @@
 #include <string.h>
 
 struct POINT {
-    float x;
-    float y;
-    float z;
+    double x;
+    double y;
+    double z;
 };
 
 struct POINT train_data[TRAIN_DATA_SIZE];
@@ -22,9 +22,11 @@ struct POINT test_data[TEST_DATA_SIZE];
 
 struct POINT online_mean = {0.0, 0.0, 0.0};
 struct POINT online_m2 = {0.0, 0.0, 0.0};
+struct POINT standard_deviation = {0.0, 0.0, 0.0};
 int current_count = 0;
+int anomalies_found = 0;
 
-int read_data(const char* file_path, struct POINT* arr) {
+void read_data(const char* file_path, struct POINT* arr) {
     FILE *filePointer;
 
     char buffer[BUF_SIZE]; /* not ISO 90 compatible */
@@ -34,11 +36,11 @@ int read_data(const char* file_path, struct POINT* arr) {
     while (fgets(buffer, BUF_SIZE, filePointer)) {
         char *pt;
         pt = strtok(buffer, ",");
-        float x = atof(pt);
+        double x = atof(pt);
         pt = strtok(NULL, ",");
-        float y = atof(pt);
+        double y = atof(pt);
         pt = strtok(NULL, ",");
-        float z = atof(pt);
+        double z = atof(pt);
 
         struct POINT point = {x, y, z};
         arr[points_added] = point;
@@ -54,11 +56,10 @@ int read_data(const char* file_path, struct POINT* arr) {
     }
 
     fclose(filePointer);
-    return 0;
 }
 
 
-void update_variance(struct POINT new_point) {
+void update_mean_and_m2(struct POINT new_point) {
     current_count++;
     struct POINT delta = {new_point.x - online_mean.x, new_point.y - online_mean.y, new_point.z - online_mean.z};
     
@@ -81,14 +82,24 @@ void update_variance(struct POINT new_point) {
         5 - anomaly on x + z axis
         7 - anomaly on x + y + z axis
 */
-int is_anomaly(struct POINT new_point, unsigned m2_factor){
+int is_anomaly(struct POINT new_point, unsigned outlier_factor){
     int res = 0;
-    if (fabs(new_point.x - pow(online_m2.x / (TRAIN_DATA_SIZE - 1), 2)) > m2_factor * pow(online_m2.x / (TRAIN_DATA_SIZE - 1), 2))
+
+    if (fabs(new_point.x - online_mean.x) > outlier_factor * standard_deviation.x)
         res += 1;
-    if (fabs(new_point.y - pow(online_m2.y / (TRAIN_DATA_SIZE - 1), 2)) > m2_factor * pow(online_m2.y / (TRAIN_DATA_SIZE - 1), 2))
+    if (fabs(new_point.y - online_mean.y) > outlier_factor * standard_deviation.y)
         res += 2;
-    if (fabs(new_point.z - pow(online_m2.z / (TRAIN_DATA_SIZE - 1), 2)) > m2_factor * pow(online_m2.z / (TRAIN_DATA_SIZE - 1), 2))
+    if (fabs(new_point.z - online_mean.z) > outlier_factor * standard_deviation.z)
         res += 4;
+
+    if (res > 0) {
+        printf("anomaly found -> x: %f y: %f, z: %f -> anomaly type: %d\n",
+               new_point.x,
+               new_point.y,
+               new_point.z,
+               res);
+        anomalies_found++;
+    }
     return res;
 }
 
@@ -97,71 +108,45 @@ int main(void) {
     read_data("../data/train.csv", train_data);
     read_data("../data/test.csv", test_data);
 
-    // mean calculation
-    struct POINT mean = {0, 0, 0};
     for (int i = 0; i < TRAIN_DATA_SIZE; ++i) {
-        mean.x += train_data[i].x;
-        mean.y += train_data[i].y;
-        mean.z += train_data[i].z;
+        update_mean_and_m2(train_data[i]);
+#ifdef VERBOSE
+        if (i > 0) {
+            printf("variance iter:%d -> ", i + 1);
+            printf("x: %f y: %f z: %f\n",
+                   online_m2.x / i,
+                   online_m2.y / i,
+                   online_m2.z / i);
+        }
+#endif
     }
-    mean.x /= TRAIN_DATA_SIZE;
-    mean.y /= TRAIN_DATA_SIZE;
-    mean.z /= TRAIN_DATA_SIZE;
-
-#ifdef VERBOSE
-    printf("mean -> ");
+    printf("final mean -> ");
     printf("x: %f y: %f z: %f\n",
-           mean.x,
-           mean.y,
-           mean.z);
-#endif
-
-    // standard deviation
-    struct POINT standard_deviation = {0, 0, 0};
-    for (int i = 0; i < TRAIN_DATA_SIZE; ++i) {
-        standard_deviation.x += (train_data[i].x - mean.x) * (train_data[i].x - mean.x);
-        standard_deviation.y += (train_data[i].y - mean.y) * (train_data[i].y - mean.y);
-        standard_deviation.z += (train_data[i].z - mean.z) * (train_data[i].z - mean.z);
-    }
-    standard_deviation.x = sqrtf(standard_deviation.x / (TRAIN_DATA_SIZE - 1));
-    standard_deviation.y = sqrtf(standard_deviation.y / (TRAIN_DATA_SIZE - 1));
-    standard_deviation.z = sqrtf(standard_deviation.z / (TRAIN_DATA_SIZE - 1));
-
-#ifdef VERBOSE
-    printf("sd -> ");
+           online_mean.x,
+           online_mean.y,
+           online_mean.z);
+    printf("final variance -> ");
     printf("x: %f y: %f z: %f\n",
-        standard_deviation.x,
-        standard_deviation.y,
-        standard_deviation.z);
-#endif
+        online_m2.x / (TRAIN_DATA_SIZE - 1),
+        online_m2.y / (TRAIN_DATA_SIZE - 1),
+        online_m2.z / (TRAIN_DATA_SIZE - 1));
 
-
-    for (int i = 0; i < TRAIN_DATA_SIZE; ++i) {
-#ifdef VERBOSE
-    printf("m2 iter:%d -> ", i);
+    standard_deviation.x = sqrt(online_m2.x / (TRAIN_DATA_SIZE - 1));
+    standard_deviation.y = sqrt(online_m2.x / (TRAIN_DATA_SIZE - 1));
+    standard_deviation.z = sqrt(online_m2.z / (TRAIN_DATA_SIZE - 1));
+    printf("final sd -> ");
     printf("x: %f y: %f z: %f\n",
-        sqrtf(online_m2.x / (TRAIN_DATA_SIZE - 1)),
-        sqrtf(online_m2.y / (TRAIN_DATA_SIZE - 1)),
-        sqrtf(online_m2.z / (TRAIN_DATA_SIZE - 1)));
-#endif
-        update_variance(train_data[i]);
-    }
-    printf("final m2 -> ");
-    printf("x: %f y: %f z: %f\n",
-        sqrtf(online_m2.x / (TRAIN_DATA_SIZE - 1)),
-        sqrtf(online_m2.y / (TRAIN_DATA_SIZE - 1)),
-        sqrtf(online_m2.z / (TRAIN_DATA_SIZE - 1)));
+           standard_deviation.x,
+           standard_deviation.y,
+           standard_deviation.z);
 
-    int anomalies_found = 0;
-    for (int i = 0; i< TEST_DATA_SIZE; ++i){
+    for (int i = 0; i< TEST_DATA_SIZE; ++i) {
+        int anomaly = is_anomaly(test_data[i], ANOMALY_DISTANCE_FACTOR);
 #ifdef VERBOSE
-        printf("id%d anomaly check -> %d\n", i, is_anomaly(test_data[i], ANOMALY_DISTANCE_FACTOR));
+        printf("id%d anomaly check -> %d\n", i, anomaly);
 #endif
-        if (is_anomaly(test_data[i], ANOMALY_DISTANCE_FACTOR) != 0)
-            anomalies_found++;
     }
     printf("Total anomalies -> %d\n", anomalies_found);
-
 
     return 0;
 }
